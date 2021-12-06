@@ -1,0 +1,142 @@
+    int n_vert = 25;
+    g_nVertices = 2*n_vert;
+    for (int i = n_vert; i < g_nVertices; i++) {
+        vertices[i] = vertices[i - n_vert];
+        vertices[i].Pos.z *= -1;
+        vertices[i].Normal.z *= -1;
+    };
+ 
+    WORD indices[500]=
+    {
+        0,1,24,
+        1,24,2,
+        24,2,13,
+        2,3,13,
+        3,13,14,
+        3,4,14,
+        4,14,17,
+        4,5,17,
+        5,6,7,
+        5,7,9,
+        7,8,9,
+        9,16,10,
+        16,15,10,
+        10,11,13,
+        13,10,14,
+        13,12,23,
+        23,20,21,
+        23,22,21
+
+
+    };
+g_nTriangles = 36 + 2 * n_vert;
+    for (int i = 54; i < 108; i++) {
+        indices[i] = indices[i - 54] + n_vert;
+    }
+    
+    int indeks = 108;
+    for (int i = 0; i < n_vert; i++) {
+        //if (i != 17) {
+            indices[indeks] = i; //A
+            indices[indeks + 1] = i + 1; //A+1 = B
+            indices[indeks + 2] = i + n_vert; // +A'
+
+            indeks += 3;
+        //}
+        //else indeks + 3;
+    }
+    for (int i = 0; i < n_vert; i++) {
+       // if (i != 17) {
+            indices[indeks] = i + n_vert; // A'
+            indices[indeks + 1] = i + 1 + n_vert; // B'
+            indices[indeks + 2] = i + 1; // B
+            indeks += 3;
+       // }
+       // else indeks += 3;
+    }
+
+ switch (message)
+    {
+    case WM_PAINT:
+        hdc = BeginPaint(hWnd, &ps);
+        EndPaint(hWnd, &ps);
+        break;
+
+    case WM_LBUTTONDOWN: //reakcja na lewy przycisk myszki
+    {
+        edx = LOWORD(lParam);
+        edy = HIWORD(lParam);
+        mouseclick = true;
+        break;
+    }
+    case WM_LBUTTONUP: //reakcja na lewy przycisk myszki
+    {
+
+        mouseclick = false;
+        break;
+    }
+    case WM_MOUSEMOVE:
+        if (mouseclick)
+        {
+            x = LOWORD(lParam);
+            y = HIWORD(lParam);
+
+
+            nx += x-edx;
+            ny += y-edy;
+
+            edx = x;
+            edy = y;
+        }
+        break;
+    case WM_KEYDOWN:
+    {
+        switch (wParam) {
+        case 0x57: {
+            ny -= 10.0f;
+            break;
+        }
+        case 0x41:
+            nx -= 10.0f;
+            break;
+        case 0x53:
+            ny += 10.0f;
+            break;
+        case 0x44:
+            nx += 10.0f;
+            break;
+        }
+        break;
+    }
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        break;
+
+        // Note that this program does not handle resizing (WM_SIZE) requests,
+        // so we created the window without the resize border.
+
+    default:
+        return DefWindowProc(hWnd, message, wParam, lParam);
+    }
+ XMVECTOR Eye = XMVectorSet(-nx / 50.0f, 2.0f,- ny / 50.0f+4.0f, 0.0f);
+XMFLOAT4 vLightColor2 = XMFLOAT4(1.5f, 1.0f, 0.0f, 1.0f);
+g_World2 = XMMatrixRotationY(t) * XMMatrixTranslation(1.0f, 0.0f, 1.0f);
+    ConstantBuffer cb1;
+    //cb1.mWorld = XMMatrixTranspose(g_World2);
+    cb1.mWorld = XMMatrixTranspose(g_World);
+    cb1.mView = XMMatrixTranspose(g_View);
+    cb1.mProjection = XMMatrixTranspose(g_Projection);
+    cb1.vLightDir = vLightDirs;
+    cb1.vLightColor = vLightColors;
+
+ static double angle = 0;
+    angle += 0.004;
+    g_World2 = XMMatrixTranslation(sin(angle) * 1.5, 0,cos(angle) * 1.5);
+    cb1.mWorld = XMMatrixTranspose(g_World2);
+   
+    cb1.vLightColor = vLightColor2;
+// Pod renderem
+    g_pImmediateContext->UpdateSubresource(g_pConstantBuffer, 0, nullptr, &cb1, 0, 0);
+    g_pImmediateContext->PSSetConstantBuffers(0, 1, &g_pConstantBuffer);
+    g_pImmediateContext->VSSetConstantBuffers(0, 1, &g_pConstantBuffer);
+    g_pImmediateContext->DrawIndexed(g_nTriangles * 3, 0, 0);
